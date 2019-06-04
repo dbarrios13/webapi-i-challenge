@@ -46,12 +46,14 @@ server.get('/users/:id', (req, res) => {
 server.post('/users', (req, res) => {
     const user = req.body
     db.insert(user)
-        .then(user => {
-            if(user.name && user.bio) {
-                res.status(201).json(user)
+        .then(newUser => {
+            if(req.body.name && req.body.bio) {
+                res.status(201).json({newUser})
             } else {
                 res.status(400).json({ 
-                    errorMessage: 'Please provide name and bio for user'
+                    success: false,
+                    errorMessage: 'Please provide name and bio for user',
+                    newUser
                 })
             }
         })  
@@ -62,7 +64,7 @@ server.post('/users', (req, res) => {
         })
 })
 
-server.delete('users/:id', (req, res) => {
+server.delete('/users/:id', (req, res) => {
     const {id} = req.params
     db.remove(id)
         .then(deleted => {
@@ -72,42 +74,62 @@ server.delete('users/:id', (req, res) => {
                 res.status(404).json({
                     message: 'The user with the specified ID does not exist'
                 })
-                console.log(req.params)
             }
         })
         .catch(err => {
             res.status(500).json({
                 error: 'The user could no be removed'
             })
-            console.log(err)
-            console.log(req.params)
         })
 })
 
 server.put('/users/:id', (req, res) => {
     const {id} = req.params
     const user = req.body
-    db.update(id, user)
-        .then(user => {
-            if(id) {
-                if(user.name && user.bio) {
-                    res.status(200).json({user})
+
+    if(user.name && user.bio){
+        db.update(id, user)
+            .then(updated => {
+                if(updated) {
+                    res.status(200).json({updated})
                 } else {
-                    res.status(400).json({
-                        errorMessage: 'Please provide name and bio for the user.'
+                    res.status(404).json({
+                        errorMessage: 'The user with the specified ID does not exist'
                     })
                 }
-            } else {
-                res.status(404).json({
-                    message: 'The user with the specified ID does not exist'
-                })
-            }
-        })
-        .catch(err => {
-            res.status(500).json({
-                error: 'The user information could not be modified'
             })
+            .catch(err => {
+                res.status(500).json({
+                    message: 'The user information could not be modified'
+                })
+            })
+    } else {
+        res.status(400).json({
+            message: 'Please provide name and bio for the user'
         })
+    }
+
+    // db.update(id, user)
+    //     .then(updated => {
+    //         if(updated) {
+    //             if(user.name && user.bio) {
+    //                 return res.status(200).json({updated})
+    //             } else {
+    //                 return res.status(400).json({
+    //                     errorMessage: 'Please provide name and bio for the user.'
+    //                 })
+    //             }
+    //         } else {
+    //             return res.status(404).json({
+    //                 message: 'The user with the specified ID does not exist'
+    //             })
+    //         }
+    //     })
+    //     .catch(err => {
+    //         return res.status(500).json({
+    //             error: 'The user information could not be modified'
+    //         })
+    //     })
 })
 
 server.listen(port, () => {
